@@ -52,7 +52,7 @@ fn main() {
 
         if instruction_bytes.len() > 1 {
             if instruction_bytes[instruction_bytes.len() -1 ] == 1 || instruction_bytes[instruction_bytes.len() -1] == 0 {
-                // parse parameter modes
+                // TODO parse parameter modes and action
                 // println!("opcode : {}", instruction)
             }
         }
