@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Debug)]
 struct Res {
     index: isize,
@@ -13,34 +15,34 @@ fn main() {
 
     let mut i: usize = 0;
     while i < cloned_program.len() {
-
+        if i == 3 {
+            break;
+        }
 
         let instruction = cloned_program[i];
-
-         println!("index {} , value {}", i, instruction);
 
         if instruction == 1 {
             let res = add_code(&mut cloned_program, i);
             cloned_program[res.index as usize] = res.value;
-            i += 3;
+            i += 4;
         }
 
         if instruction == 2 {
             let res = multiply_code(&mut cloned_program, i);
             cloned_program[res.index as usize] = res.value;
-            i += 3;
+            i += 4;
         }
 
         if instruction == 3 {
             let loc = cloned_program[i + 1];
             cloned_program[loc as usize] = input;
-            i +=1;
+            i += 2;
         }
 
         if instruction == 4 {
             let loc = cloned_program[i + 1];
             println!("output instruction : {}", cloned_program[loc as usize]);
-            i +=1;
+            i += 2;
         }
 
         if instruction == 99 {
@@ -48,19 +50,93 @@ fn main() {
             break;
         }
 
-        let instruction_bytes = instruction.to_be_bytes();
+        let instruction_bytes = get_bytes(&instruction);
 
-        if instruction_bytes.len() > 1 {
-            if instruction_bytes[instruction_bytes.len() -1 ] == 1 || instruction_bytes[instruction_bytes.len() -1] == 0 {
-                // TODO parse parameter modes and action
-                // println!("opcode : {}", instruction)
+        println!("index {}, value {}, bytes {:?}", i, instruction, instruction_bytes);
+
+        if is_opcode_with_parameters(&instruction_bytes) {
+
+            let opcode = Some(instruction_bytes[instruction_bytes.len() - 1]);
+
+            let mut modes = [0, 0, 0];
+
+            // loop through the parameter modes - we know
+            // the first two are the opcode so skip those
+            let mut j = instruction_bytes.len() - 2;
+            while j != 0 {
+                if instruction_bytes[j] == Some(1) {
+                    modes[k] = 1
+                }
+                j -= 1
             }
+
+            let mut j = 1;
+            while j <= 3 {
+                println!("param : {}", cloned_program[i + j]);
+
+                let mut val = 0;
+                if modes[j - 1] == 0 {
+                    let input_loc = cloned_program[i + j];
+                    val = cloned_program[input_loc];
+                } else {
+                    val = cloned_program[i + j]
+                }
+
+                j += 1;
+            }
+
+            // TODO parse parameter modes and action
+            // the length parameter modes does not reflect the number of parameters
+            // as there can be more parameter than modes defined. "Any missing modes are 0"
+            // figure out how many parameters there are without using the parameter codes.
+
+            // we know there are at least 2 params so start with 2
+//            let mut no_of_params = 2;
+//            let mut j: usize = i + 3;
+//            let mut is_op = false;
+//            while !is_op {
+//                let bytes = get_bytes(&cloned_program[j]);
+//                if is_opcode_with_parameters(&bytes) || is_opcode(&cloned_program[j]) {
+//                    is_op = true;
+//                }
+//                println!("{} is opcode : {}", cloned_program[j], is_op);
+//                no_of_params += 1;
+//                j += 1;
+//            }
+//            println!("total params : {}", no_of_params);
+//            i += no_of_params;
+            break;
         }
-
-        i += 1
-
     }
+}
 
+fn get_bytes(input: &isize) -> Vec<Option<u32>> {
+    input.to_string().chars().map(|d| {
+        match d.to_digit(10) {
+            Some(isize) => Some(isize),
+            None => None
+        }
+    }).collect()
+}
+
+fn is_opcode_with_parameters(input: &Vec<Option<u32>>) -> bool {
+    if input.len() > 1 && input[0] != None && input[input.len() - 2] == Some(0) {
+        if input[input.len() - 1] == Some(1) || input[input.len() - 1] == Some(2) {
+            return true;
+        }
+    }
+    false
+}
+
+fn is_opcode(input: &isize) -> (bool) {
+    match input {
+        1 => true,
+        2 => true,
+        3 => true,
+        4 => true,
+        99 => true,
+        _ => false,
+    }
 }
 
 fn add_code(program: &mut [isize; 678], i: usize) -> Res {
