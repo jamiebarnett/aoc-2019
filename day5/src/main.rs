@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 #[derive(Debug)]
 struct Res {
     index: isize,
@@ -15,34 +13,43 @@ fn main() {
 
     let mut i: usize = 0;
     while i < cloned_program.len() {
-        if i == 3 {
+        if i == 34 {
             break;
         }
 
+
         let instruction = cloned_program[i];
+        let instruction_bytes = get_bytes(&instruction);
+        println!("\nvalue at 224 {}", cloned_program[224]);
+        println!("index {}, value {}, bytes {:?}", i, instruction, instruction_bytes);
 
         if instruction == 1 {
             let res = add_code(&mut cloned_program, i);
             cloned_program[res.index as usize] = res.value;
             i += 4;
+            continue;
         }
 
         if instruction == 2 {
             let res = multiply_code(&mut cloned_program, i);
             cloned_program[res.index as usize] = res.value;
             i += 4;
+            continue;
         }
 
         if instruction == 3 {
             let loc = cloned_program[i + 1];
             cloned_program[loc as usize] = input;
             i += 2;
+            continue;
         }
 
         if instruction == 4 {
             let loc = cloned_program[i + 1];
+            println!("param : {}, value : {}", loc, cloned_program[loc as usize]);
             println!("output instruction : {}", cloned_program[loc as usize]);
             i += 2;
+            continue;
         }
 
         if instruction == 99 {
@@ -50,62 +57,81 @@ fn main() {
             break;
         }
 
-        let instruction_bytes = get_bytes(&instruction);
-
-        println!("index {}, value {}, bytes {:?}", i, instruction, instruction_bytes);
 
         if is_opcode_with_parameters(&instruction_bytes) {
-
-            let opcode = Some(instruction_bytes[instruction_bytes.len() - 1]);
-
-            let mut modes = [0, 0, 0];
-
-            // loop through the parameter modes - we know
-            // the first two are the opcode so skip those
-            let mut j = instruction_bytes.len() - 2;
-            while j != 0 {
-                if instruction_bytes[j] == Some(1) {
-                    modes[k] = 1
-                }
-                j -= 1
-            }
-
-            let mut j = 1;
-            while j <= 3 {
-                println!("param : {}", cloned_program[i + j]);
-
+            let opcode = instruction_bytes[instruction_bytes.len() - 1];
+            if opcode == Some(4) {
+                let mode = instruction_bytes[instruction_bytes.len() - 3].unwrap();
                 let mut val = 0;
-                if modes[j - 1] == 0 {
-                    let input_loc = cloned_program[i + j];
-                    val = cloned_program[input_loc];
+                if mode == 0 {
+                    let input_loc = cloned_program[i + 1];
+                    val = cloned_program[input_loc as usize];
                 } else {
-                    val = cloned_program[i + j]
+                    val = cloned_program[i + 1]
                 }
 
-                j += 1;
+                println!("output instruction : {}", val);
+
+                i += 2;
+            } else {
+                let mut modes = [0, 0, 0];
+
+                // loop through the parameter modes - we know
+                // the first two are the opcode so skip those
+                let mut j = instruction_bytes.len() - 2;
+                let mut k = 0;
+                // TODO stuck in this loop - panics if j is subtracted when 0
+                // + when k is added to when 2 but the loop get's stuck and doesn't
+                // complete when checks are in place
+
+                // have implemented fix to subtract from j but now stuck on a value of 41 which is incorrect
+                while j > 0 {
+//                    println!("byte : {}", j - 1);
+                    if instruction_bytes[j - 1] == Some(1) {
+                        modes[k] = 1
+                    }
+                    if j > 0 {
+                        j -= 1;
+                    }
+
+                    if k < 2 {
+                        k += 1
+                    }
+                }
+
+                println!("modes : {:?}", modes);
+
+                let mut vals: Vec<isize> = Vec::new();
+                let mut l = 1;
+                while l <= 3 {
+                    let mut val = 0;
+                    if modes[l - 1] == 0 {
+                        let input_loc = cloned_program[i + l];
+                        val = cloned_program[input_loc as usize];
+                    } else {
+                        val = cloned_program[i + l]
+                    }
+
+                    vals.push(val);
+                    println!("param : {}, val : {}", cloned_program[i + l], val);
+
+                    l += 1;
+                }
+
+                let mut result: isize = 0;
+                if opcode == Some(1) {
+                    result = vals[0] + vals[1];
+                    println!("{} + {} = {}", vals[0], vals[1], result)
+                }
+
+                if opcode == Some(2) {
+                    result = vals[0] * vals[1]
+                }
+
+                cloned_program[vals[2] as usize] = result;
+
+                i += 4;
             }
-
-            // TODO parse parameter modes and action
-            // the length parameter modes does not reflect the number of parameters
-            // as there can be more parameter than modes defined. "Any missing modes are 0"
-            // figure out how many parameters there are without using the parameter codes.
-
-            // we know there are at least 2 params so start with 2
-//            let mut no_of_params = 2;
-//            let mut j: usize = i + 3;
-//            let mut is_op = false;
-//            while !is_op {
-//                let bytes = get_bytes(&cloned_program[j]);
-//                if is_opcode_with_parameters(&bytes) || is_opcode(&cloned_program[j]) {
-//                    is_op = true;
-//                }
-//                println!("{} is opcode : {}", cloned_program[j], is_op);
-//                no_of_params += 1;
-//                j += 1;
-//            }
-//            println!("total params : {}", no_of_params);
-//            i += no_of_params;
-            break;
         }
     }
 }
@@ -121,7 +147,7 @@ fn get_bytes(input: &isize) -> Vec<Option<u32>> {
 
 fn is_opcode_with_parameters(input: &Vec<Option<u32>>) -> bool {
     if input.len() > 1 && input[0] != None && input[input.len() - 2] == Some(0) {
-        if input[input.len() - 1] == Some(1) || input[input.len() - 1] == Some(2) {
+        if input[input.len() - 1] == Some(1) || input[input.len() - 1] == Some(2) || input[input.len() - 1] == Some(4) {
             return true;
         }
     }
@@ -145,6 +171,10 @@ fn add_code(program: &mut [isize; 678], i: usize) -> Res {
     let store = program[i + 3];
     let result = program[value1 as usize] + program[value2 as usize];
 
+    println!("param : {}, value : {}", program[i + 1], program[value1 as usize]);
+    println!("param : {}, value : {}", program[i + 2], program[value2 as usize]);
+    println!("param : {}, value : {}", program[i + 3], program[store as usize]);
+
     Res {
         index: store,
         value: result,
@@ -156,6 +186,10 @@ fn multiply_code(program: &mut [isize; 678], i: usize) -> Res {
     let value2 = program[i + 2];
     let store = program[i + 3];
     let result = program[value1 as usize] * program[value2 as usize];
+
+    println!("param : {}, value : {}", program[i + 1], program[value1 as usize]);
+    println!("param : {}, value : {}", program[i + 2], program[value2 as usize]);
+    println!("param : {}, value : {}", program[i + 3], program[store as usize]);
 
     Res {
         index: store,
