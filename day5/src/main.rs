@@ -17,46 +17,9 @@ fn main() {
             break;
         }
 
-
         let instruction = cloned_program[i];
         let instruction_bytes = get_bytes(&instruction);
-        println!("\nvalue at 224 {}", cloned_program[224]);
         println!("index {}, value {}, bytes {:?}", i, instruction, instruction_bytes);
-
-        if instruction == 1 {
-            let res = add_code(&mut cloned_program, i);
-            cloned_program[res.index as usize] = res.value;
-            i += 4;
-            continue;
-        }
-
-        if instruction == 2 {
-            let res = multiply_code(&mut cloned_program, i);
-            cloned_program[res.index as usize] = res.value;
-            i += 4;
-            continue;
-        }
-
-        if instruction == 3 {
-            let loc = cloned_program[i + 1];
-            cloned_program[loc as usize] = input;
-            i += 2;
-            continue;
-        }
-
-        if instruction == 4 {
-            let loc = cloned_program[i + 1];
-            println!("param : {}, value : {}", loc, cloned_program[loc as usize]);
-            println!("output instruction : {}", cloned_program[loc as usize]);
-            i += 2;
-            continue;
-        }
-
-        if instruction == 99 {
-            println!("ended diagnostic with value {}", cloned_program[0]);
-            break;
-        }
-
 
         if is_opcode_with_parameters(&instruction_bytes) {
             let opcode = instruction_bytes[instruction_bytes.len() - 1];
@@ -70,7 +33,7 @@ fn main() {
                     val = cloned_program[i + 1]
                 }
 
-                println!("output instruction : {}", val);
+                println!("\noutput instruction : {} \n", val);
 
                 i += 2;
             } else {
@@ -80,24 +43,10 @@ fn main() {
                 // the first two are the opcode so skip those
                 let mut j = instruction_bytes.len() - 2;
                 let mut k = 0;
-                // TODO stuck in this loop - panics if j is subtracted when 0
-                // + when k is added to when 2 but the loop get's stuck and doesn't
-                // complete when checks are in place
 
-                // have implemented fix to subtract from j but now stuck on a value of 41 which is incorrect
-                while j > 0 {
-//                    println!("byte : {}", j - 1);
-                    if instruction_bytes[j - 1] == Some(1) {
-                        modes[k] = 1
-                    }
-                    if j > 0 {
-                        j -= 1;
-                    }
-
-                    if k < 2 {
-                        k += 1
-                    }
-                }
+                modes[0] = instruction / 1000;
+                modes[1] = instruction / 10000;
+                modes[2] = instruction / 10000;
 
                 println!("modes : {:?}", modes);
 
@@ -131,6 +80,40 @@ fn main() {
                 cloned_program[vals[2] as usize] = result;
 
                 i += 4;
+            }
+        } else if is_opcode(&instruction) {
+            if instruction == 1 {
+                let res = add_code(&mut cloned_program, i);
+                cloned_program[res.index as usize] = res.value;
+                i += 4;
+                continue;
+            }
+
+            if instruction == 2 {
+                let res = multiply_code(&mut cloned_program, i);
+                cloned_program[res.index as usize] = res.value;
+                i += 4;
+                continue;
+            }
+
+            if instruction == 3 {
+                let loc = cloned_program[i + 1];
+                cloned_program[loc as usize] = input;
+                i += 2;
+                continue;
+            }
+
+            if instruction == 4 {
+                let loc = cloned_program[i + 1];
+                println!("param : {}, value : {}", loc, cloned_program[loc as usize]);
+                println!("output instruction : {}", cloned_program[loc as usize]);
+                i += 2;
+                continue;
+            }
+
+            if instruction == 99 {
+                println!("ended diagnostic with value {}", cloned_program[0]);
+                break;
             }
         }
     }
